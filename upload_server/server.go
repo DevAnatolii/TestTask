@@ -6,8 +6,9 @@ import (
 	"testTask/upload_server/handler"
 )
 
-func Start(address string, personsServerBaseUrl string) {
+func Start(serverBaseUrl string, personsServerBaseUrl string, errorFileLoggingPath string) {
 	serveMux := http.NewServeMux()
-	serveMux.Handle(handler.HandlePath, handler.NewUploadHandler(personsServerBaseUrl))
-	log.Fatal(http.ListenAndServe(address, serveMux))
+	serveMux.Handle(handler.HandlePath, handler.NewUploadHandler(personsServerBaseUrl, errorFileLoggingPath))
+	log.Println("Start upload server on " + serverBaseUrl)
+	log.Fatal(http.ListenAndServe(serverBaseUrl, serveMux))
 }

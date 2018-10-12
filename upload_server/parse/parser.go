@@ -8,17 +8,25 @@ import (
 	"testTask/upload_server/model"
 )
 
-func ParseFile(r io.Reader, records chan<- model.Record) {
+func ParseFile(r io.Reader, records chan<- *model.Record) {
 	reader := csv.NewReader(r)
+	skipHeaders := true
 	for {
 		// read just one record
 		rawRecord, err := reader.Read()
+
 		// end-of-file is fitted into err
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			fmt.Println("Error:", err)
 			break
+		}
+
+		//skip column headers, which are listed in first row
+		if skipHeaders {
+			skipHeaders = false
+			continue
 		}
 
 		id, err := strconv.Atoi(rawRecord[0])
@@ -33,7 +41,7 @@ func ParseFile(r io.Reader, records chan<- model.Record) {
 			Phone: rawRecord[3],
 		}
 
-		records <- record
+		records <- &record
 	}
 	close(records)
 }

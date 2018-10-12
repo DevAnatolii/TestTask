@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package contract;
+
+service Persons {
+    rpc AddRecord (stream AddPersonRequest) returns (stream AddPersonResponse) {}
+}
+
+message AddPersonRequest {
+     int32 id = 1;
+     string name = 2;
+     string email = 3;
+     string phone = 4;
+}
+
+message AddPersonResponse {
+     bool processed = 2;
+     string errorMessage = 1;
+}

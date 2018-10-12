@@ -1,44 +1,41 @@
 package persons_server
 
 import (
-	"errors"
-	"fmt"
-	"log"
-	"net/http"
-	"testTask/persons_server/handler"
+	"io"
+	"testTask/microservice_comunication"
+	"testTask/persons_server/delegate"
 	"testTask/persons_server/repository"
-	"testTask/persons_server/repository/temporary"
 )
 
-const (
-	StoragePersistent = 1
-	StorageTemporary  = 2
-)
-
-func Start(address string, storageType int) (err error) {
-	serveMux := http.NewServeMux()
-
-	storage, err := createStorage(storageType)
-	if err != nil {
-		fmt.Printf("Error during launch server: %q", err)
-		return
-	}
-
-	studentsHandler := handler.NewPersonHandler(storage)
-	serveMux.Handle(handler.HandlePath, studentsHandler)
-
-	log.Fatal(http.ListenAndServe(address, serveMux))
-	return
+type server struct {
+	personDelegate *delegate.PersonDelegate
 }
 
-func createStorage(storageType int) (storage repository.PersonRepository, err error) {
-	switch storageType {
-	case StoragePersistent:
-		err = errors.New("this type is not supported")
-	case StorageTemporary:
-		storage = temporary.NewPersonStorage()
-	default:
-		err = errors.New("unknown type")
+func NewServer(storage repository.PersonRepository) *server {
+	return &server{
+		personDelegate: delegate.NewPersonDelegate(storage),
 	}
-	return
+}
+
+func (s *server) AddRecord(stream contract.Persons_AddRecordServer) error {
+	for {
+		rec, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		if err := s.personDelegate.AddPersonRecord(rec); err != nil {
+			stream.Send(&contract.AddPersonResponse{
+				Processed:    false,
+				ErrorMessage: err.Error(),
+			})
+		} else {
+			stream.Send(&contract.AddPersonResponse{
+				Processed: true,
+			})
+		}
+	}
 }
